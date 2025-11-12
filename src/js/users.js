@@ -14,6 +14,12 @@ const LANDMARK_POINT_SCALE = 0.015; // fraction of face width used for point rad
 const LANDMARK_POINT_MAX = 4; // max radius in pixels
 const JAW_EXTEND_RATIO = 1.15; // extend jaw points outward by 15% to fit sides better
 
+function configureVideoLighting(videoElement) {
+  if (!videoElement) return;
+  videoElement.style.filter = 'brightness(1.1) contrast(1.15) saturate(1.1)';
+  console.debug('[Camera] Lighting configuration applied: brightness(1.1) contrast(1.15) saturate(1.1)');
+}
+
 function loadUsers() {
   return fetch('/api/get-state')
     .then((res) => res.json())
@@ -234,6 +240,7 @@ async function startCamera() {
   if (cameraStream) return;
   cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
   $('#camera').srcObject = cameraStream;
+  configureVideoLighting($('#camera'));
 
   try {
     const video = $('#camera');
@@ -509,7 +516,7 @@ function stopClientLandmarkStream() {
   liveLandmarkInterval = null;
 }
 
-// load face-api models (tries local then demo CDN)
+// load face-api models from local or CDN
 async function loadFaceApiModels() {
   if (faceApiModelsLoaded) return;
   try {

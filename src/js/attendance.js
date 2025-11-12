@@ -1,23 +1,24 @@
 import { $ } from './libs/element';
 import updateClock from './libs/clock';
 
-fetch('/api/get-state')
-  .then((res) => res.json())
-  .then(({ logs }) => {
-    $('#recognitionLog').replaceChildren(
-      ...logs.map((log) => {
-        const p = $.create('p');
-        const emoji = log.recognized ? '✅' : '❌';
-        // Handle null/empty names gracefully
-        const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
-        const dept = log.dept || log.role || '';
-        const userInfo = log.user_id ? ` ${log.user_id}` : '';
-        p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`;
+// Don't load logs on initial page load - they'll be cleared anyway
+// fetch('/api/get-state')
+//   .then((res) => res.json())
+//   .then(({ logs }) => {
+//     $('#recognitionLog').replaceChildren(
+//       ...logs.map((log) => {
+//         const p = $.create('p');
+//         const emoji = log.recognized ? '✅' : '❌';
+//         // Handle null/empty names gracefully
+//         const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
+//         const dept = log.dept || log.role || '';
+//         const userInfo = log.user_id ? ` ${log.user_id}` : '';
+//         p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`;
 
-        return p;
-      })
-    );
-  });
+//         return p;
+//       })
+//     );
+//   });
 
 updateClock();
 
@@ -26,19 +27,83 @@ let interval;
 let landmarkInterval;
 let recognizingInFlight = false;
 let lastRecognize = 0;
-const RECOGNIZE_COOLDOWN_MS = 700; // min ms between server recognition requests
+const RECOGNIZE_COOLDOWN_MS = 300; // iweak lang ni ffor faster recognition
 const RECOGNIZE_MAX_WIDTH = 480; // scale frames down before upload to speed up server
 // track last attendance timestamp per user to avoid duplicate logs
 const lastAttendance = new Map();
-const ATTENDANCE_COOLDOWN_MS = 5000; // 5 seconds
+const ATTENDANCE_COOLDOWN_MS = 5000; // 5 seconds cooldown before ka log in ang next user
+// track currently logged-in users using sessionStorage to share state across pages
+let showingAlreadyLoggedInMessage = false;
+
+// Helper functions for sessionStorage-based logged-in tracking
+function getLoggedInUsers() {
+  try {
+    const data = sessionStorage.getItem('loggedInUsers');
+    return data ? new Set(JSON.parse(data)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function setLoggedInUsers(set) {
+  try {
+    sessionStorage.setItem('loggedInUsers', JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.error('Failed to save logged-in users to sessionStorage', e);
+  }
+}
+
+function addLoggedInUser(uid) {
+  const users = getLoggedInUsers();
+  users.add(uid);
+  setLoggedInUsers(users);
+}
+
+function removeLoggedInUser(uid) {
+  const users = getLoggedInUsers();
+  users.delete(uid);
+  setLoggedInUsers(users);
+}
+
+function isUserLoggedIn(uid) {
+  const users = getLoggedInUsers();
+  return users.has(uid);
+}
+
+function clearLoggedInUsers() {
+  try {
+    sessionStorage.removeItem('loggedInUsers');
+  } catch (e) {
+    console.error('Failed to clear logged-in users', e);
+  }
+}
+
+// Clear logged-out users so they can log back in
+function clearLoggedOutUsers() {
+  try {
+    sessionStorage.removeItem('loggedOutUsers');
+  } catch (e) {
+    console.error('Failed to clear logged-out users', e);
+  }
+}
 
 /** @type {HTMLVideoElement} */
 const video = $('#cameraFeed');
 
+// Camera lighting configuration 
+// Values matched to: brightness 77, contrast 83, saturation 93 from original code ni trajan
+function configureVideoLighting(videoElement) {
+  if (!videoElement) return;
+  
+  // Apply CSS filter adjustments for brightness, contrast, and saturation (CSS filter percentages)
+  videoElement.style.filter = 'brightness(1.1) contrast(1.15) saturate(1.1)';
+  console.debug('[Camera] Lighting configuration applied: brightness(1.1) contrast(1.15) saturate(1.1)');
+}
+
 // tuning constants 
-const LANDMARK_POINT_SCALE = 0.015; // fraction of face width used for point radius (much smaller, almost invisible but still visible)
-const LANDMARK_POINT_MAX = 4; // max radius in pixels (very small)
-const BOX_PADDING_SCALE = 0.15; // fraction of face width for bounding box padding (bigger red box)
+const LANDMARK_POINT_SCALE = 0.015; // fraction of face width used for point radius
+const LANDMARK_POINT_MAX = 4; // max radius in pixels 
+const BOX_PADDING_SCALE = 0.15; // fraction of face width for bounding box padding 
 const JAW_EXTEND_RATIO = 1.15; // extend jaw points outward by 15% to fit sides better
 // distance/ratio tuning (face box width as fraction of display width)
 // Preferred/ideal face width ratio ~ 35% of display (du raya ru sakto na distance sa cam)
@@ -56,6 +121,9 @@ async function startCamera() {
   try {
   stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
+  
+  // Apply camera lighting configuration
+  configureVideoLighting(video);
 
     // create overlay for landmarks
     try {
@@ -142,8 +210,7 @@ async function startCamera() {
                   // ignore box draw errors
                 }
 
-                // Draw only points (no path connections for less visual clutter)
-                // Much smaller points so face is still clearly visible
+                // Draw only points 
                 ctx.fillStyle = 'rgba(0,255,100,0.9)';
                 ctx.strokeStyle = 'rgba(0,150,50,0.95)';
                 const pointRadius = Math.min(LANDMARK_POINT_MAX, Math.max(0.8, Math.round(faceWidth * LANDMARK_POINT_SCALE)));
@@ -269,7 +336,7 @@ async function startCamera() {
           } catch (e) {
             // ignore errors
           }
-        }, 200);
+        }, 100); // reduced from 200ms for faster detection
     } catch (e) {
       console.warn('Failed to create landmark overlay', e);
     }
@@ -313,6 +380,20 @@ function handleRecognitionResponse(data) {
 
   if (data && data.status === 'success') {
     const uid = data.id != null ? String(data.id) : (data.name || 'unknown');
+    
+    // Check if user is already logged in
+    if (isUserLoggedIn(uid)) {
+      const log = $.create('div');
+      log.style.color = '#ff9800';
+      log.style.fontWeight = 'bold';
+      log.textContent = `${time} - ⚠️ You already logged in! Please logout first.`;
+      list.insertBefore(log, list.firstChild);
+      
+      // Show overlay message on camera
+      showAlreadyLoggedInOverlay();
+      return;
+    }
+    
     const now = Date.now();
     const last = lastAttendance.get(uid) || 0;
     if (now - last >= ATTENDANCE_COOLDOWN_MS) {
@@ -321,6 +402,9 @@ function handleRecognitionResponse(data) {
       const dept = data.dept || data.role || 'Unknown';
       log.textContent = `${time} - ✅ ${data.name} (${dept})`;
       list.insertBefore(log, list.firstChild);
+
+      // Track this user as logged in
+      addLoggedInUser(uid);
 
       // mark attendance and refresh /api/get-state so DB reflects immediately in UI
       try {
@@ -341,7 +425,16 @@ function handleRecognitionResponse(data) {
             } else {
               // fetch fresh state so DB-backed views reflect immediately
               try { fetch('/api/get-state').then((r) => r.json()).then(({ logs }) => {
-                $('#recognitionLog').replaceChildren(...logs.map((log) => { const p = $.create('p'); const emoji = log.recognized ? '✅' : '❌'; const dept = log.dept || log.role || ''; p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${log.name} ${log.user_id} ${dept ? '(' + dept + ')' : ''}`; return p; })); }); }
+                $('#recognitionLog').replaceChildren(...logs.map((log) => { 
+                  const p = $.create('p'); 
+                  const emoji = log.recognized ? '✅' : '❌'; 
+                  const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
+                  const dept = log.dept || log.role || ''; 
+                  const userInfo = log.user_id ? ` ${log.user_id}` : '';
+                  p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
+                  return p; 
+                })); 
+              }); }
               catch (e) { /* ignore */ }
             }
           })
@@ -374,7 +467,16 @@ function handleRecognitionResponse(data) {
             list.insertBefore(errEl, list.firstChild);
           } else {
             try { fetch('/api/get-state').then((r) => r.json()).then(({ logs }) => {
-              $('#recognitionLog').replaceChildren(...logs.map((log) => { const p = $.create('p'); const emoji = log.recognized ? '✅' : '❌'; const dept = log.dept || log.role || ''; p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${log.name} ${log.user_id} ${dept ? '(' + dept + ')' : ''}`; return p; })); }); }
+              $('#recognitionLog').replaceChildren(...logs.map((log) => { 
+                const p = $.create('p'); 
+                const emoji = log.recognized ? '✅' : '❌'; 
+                const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
+                const dept = log.dept || log.role || ''; 
+                const userInfo = log.user_id ? ` ${log.user_id}` : '';
+                p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
+                return p; 
+              })); 
+            }); }
             catch (e) { /* ignore */ }
           }
         })
@@ -427,5 +529,68 @@ function stopCamera() {
   }
 }
 
-$('#start-camera').onclick = startCamera;
-$('#stop-camera').onclick = stopCamera;
+function showAlreadyLoggedInOverlay() {
+  if (showingAlreadyLoggedInMessage) return;
+  showingAlreadyLoggedInMessage = true;
+  
+  const overlay = document.getElementById('cameraFeedOverlay');
+  if (!overlay) return;
+  
+  const ctx = overlay.getContext('2d');
+  
+  try {
+    const msg = 'You already logged in';
+    ctx.font = 'bold 24px Arial';
+    const m = ctx.measureText(msg);
+    const x = Math.max(8, overlay.width / 2 - m.width / 2);
+    const y = Math.max(50, overlay.height / 2);
+    
+    // Draw background box
+    ctx.fillStyle = 'rgba(255, 152, 0, 0.9)';
+    ctx.fillRect(x - 12, y - 30, m.width + 24, 50);
+    
+    // Draw text
+    ctx.fillStyle = 'white';
+    ctx.fillText(msg, x, y);
+    
+    // Auto-clear message after 3 seconds
+    setTimeout(() => {
+      showingAlreadyLoggedInMessage = false;
+    }, 3000);
+  } catch (e) {
+    console.error('Failed to draw overlay message', e);
+  }
+}
+
+// Clear recognition logs when page becomes hidden or loses focus
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    $('#recognitionLog').innerHTML = '';
+  }
+});
+
+// Auto-start camera when page loads
+window.addEventListener('load', () => {
+  // Clear logged-out users so they can log back in
+  clearLoggedOutUsers();
+  // Keep logs cleared when returning to page
+  $('#recognitionLog').innerHTML = '';
+  startCamera();
+});
+
+// Stop camera when page is about to unload
+window.addEventListener('beforeunload', () => {
+  stopCamera();
+});
+
+// Clear logs when navigating away from this page
+window.addEventListener('pagehide', () => {
+  $('#recognitionLog').innerHTML = '';
+});
+
+$('#stop-camera').onclick = () => {
+  stopCamera();
+  // Clear logged-in users only when explicitly stopping
+  clearLoggedInUsers();
+  showingAlreadyLoggedInMessage = false;
+};

@@ -1,24 +1,25 @@
 import { $ } from './libs/element';
 import updateClock from './libs/clock';
 
-fetch('/api/get-state')
-  .then((res) => res.json())
-  .then(({ logout_logs }) => {
-    const logs = logout_logs || [];
-    $('#recognitionLog').replaceChildren(
-      ...logs.map((log) => {
-        const p = $.create('p');
-        const emoji = log.recognized ? '✅' : '❌';
-        // Handle null/empty names gracefully
-        const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
-        const dept = log.dept || log.role || '';
-        const userInfo = log.user_id ? ` ${log.user_id}` : '';
-        p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`;
+// Don't load logs on initial page load - they'll be cleared anyway
+// fetch('/api/get-state')
+//   .then((res) => res.json())
+//   .then(({ logout_logs }) => {
+//     const logs = logout_logs || [];
+//     $('#recognitionLog').replaceChildren(
+//       ...logs.map((log) => {
+//         const p = $.create('p');
+//         const emoji = log.recognized ? '✅' : '❌';
+//         // Handle null/empty names gracefully
+//         const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
+//         const dept = log.dept || log.role || '';
+//         const userInfo = log.user_id ? ` ${log.user_id}` : '';
+//         p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`;
 
-        return p;
-      })
-    );
-  });
+//         return p;
+//       })
+//     );
+//   });
 
 updateClock();
 
@@ -27,14 +28,107 @@ let interval;
 let landmarkInterval;
 let recognizingInFlight = false;
 let lastRecognize = 0;
-const RECOGNIZE_COOLDOWN_MS = 700; // min ms between server recognition requests
+const RECOGNIZE_COOLDOWN_MS = 300; // itweak lang ni for faster recognition
 const RECOGNIZE_MAX_WIDTH = 480; // scale frames down before upload to speed up server
 // track last logout timestamp per user to avoid duplicate logs
 const lastLogout = new Map();
 const LOGOUT_COOLDOWN_MS = 5000; // 5 seconds
+// track currently logged-in users using sessionStorage to share state across pages
+let showingAlreadyLoggedOutMessage = false;
+
+// Helper functions for sessionStorage-based logged-in tracking
+function getLoggedInUsers() {
+  try {
+    const data = sessionStorage.getItem('loggedInUsers');
+    return data ? new Set(JSON.parse(data)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function setLoggedInUsers(set) {
+  try {
+    sessionStorage.setItem('loggedInUsers', JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.error('Failed to save logged-in users to sessionStorage', e);
+  }
+}
+
+function addLoggedInUser(uid) {
+  const users = getLoggedInUsers();
+  users.add(uid);
+  setLoggedInUsers(users);
+}
+
+function removeLoggedInUser(uid) {
+  const users = getLoggedInUsers();
+  users.delete(uid);
+  setLoggedInUsers(users);
+}
+
+function isUserLoggedIn(uid) {
+  const users = getLoggedInUsers();
+  return users.has(uid);
+}
+
+function clearLoggedInUsers() {
+  try {
+    sessionStorage.removeItem('loggedInUsers');
+  } catch (e) {
+    console.error('Failed to clear logged-in users', e);
+  }
+}
+
+// Track users who have already logged out in this session
+function getLoggedOutUsers() {
+  try {
+    const data = sessionStorage.getItem('loggedOutUsers');
+    return data ? new Set(JSON.parse(data)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function setLoggedOutUsers(set) {
+  try {
+    sessionStorage.setItem('loggedOutUsers', JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.error('Failed to save logged-out users to sessionStorage', e);
+  }
+}
+
+function addLoggedOutUser(uid) {
+  const users = getLoggedOutUsers();
+  users.add(uid);
+  setLoggedOutUsers(users);
+}
+
+function isUserLoggedOut(uid) {
+  const users = getLoggedOutUsers();
+  return users.has(uid);
+}
+
+function clearLoggedOutUsers() {
+  try {
+    sessionStorage.removeItem('loggedOutUsers');
+  } catch (e) {
+    console.error('Failed to clear logged-out users', e);
+  }
+}
 
 /** @type {HTMLVideoElement} */
 const video = $('#cameraFeed');
+
+// Camera lighting configuration (applied via CSS filters since browser doesn't have direct camera control)
+// Values matched to: brightness 77, contrast 83, saturation 93 from OpenCV configuration
+function configureVideoLighting(videoElement) {
+  if (!videoElement) return;
+  
+  // Apply CSS filter adjustments for brightness, contrast, and saturation
+  // Converted from OpenCV values (0-100 scale) to CSS filter percentages
+  videoElement.style.filter = 'brightness(1.1) contrast(1.15) saturate(1.1)';
+  console.debug('[Camera] Lighting configuration applied: brightness(1.1) contrast(1.15) saturate(1.1)');
+}
 
 // tuning constants 
 const LANDMARK_POINT_SCALE = 0.015; // fraction of face width used for point radius (much smaller, almost invisible but still visible)
@@ -57,6 +151,9 @@ async function startCamera() {
   try {
   stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
+  
+  // Apply camera lighting configuration
+  configureVideoLighting(video);
 
     // create overlay for landmarks
     try {
@@ -270,7 +367,7 @@ async function startCamera() {
           } catch (e) {
             // ignore errors
           }
-        }, 200);
+        }, 100); // reduced from 200ms for faster detection
     } catch (e) {
       console.warn('Failed to create landmark overlay', e);
     }
@@ -314,6 +411,17 @@ function handleLogoutResponse(data) {
 
   if (data && data.status === 'success') {
     const uid = data.id != null ? String(data.id) : (data.name || 'unknown');
+    
+    // Check if user already logged out
+    if (isUserLoggedOut(uid)) {
+      const log = $.create('div');
+      log.style.color = '#ff9800';
+      log.style.fontWeight = 'bold';
+      log.textContent = `${time} - ⚠️ You already logged out!`;
+      list.insertBefore(log, list.firstChild);
+      return;
+    }
+    
     const now = Date.now();
     const last = lastLogout.get(uid) || 0;
     if (now - last >= LOGOUT_COOLDOWN_MS) {
@@ -322,6 +430,10 @@ function handleLogoutResponse(data) {
       const dept = data.dept || data.role || 'Unknown';
       log.textContent = `${time} - ✅ ${data.name} (${dept})`;
       list.insertBefore(log, list.firstChild);
+
+      // Track this user as logged out and remove from logged-in set
+      addLoggedOutUser(uid);
+      removeLoggedInUser(uid);
 
       // mark logout and refresh /api/get-state so DB reflects immediately in UI
       try {
@@ -343,7 +455,16 @@ function handleLogoutResponse(data) {
               // fetch fresh state so DB-backed views reflect immediately
               try { fetch('/api/get-state').then((r) => r.json()).then(({ logout_logs }) => {
                 const logs = logout_logs || [];
-                $('#recognitionLog').replaceChildren(...logs.map((log) => { const p = $.create('p'); const emoji = log.recognized ? '✅' : '❌'; const dept = log.dept || log.role || ''; p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${log.name} ${log.user_id} ${dept ? '(' + dept + ')' : ''}`; return p; })); }); }
+                $('#recognitionLog').replaceChildren(...logs.map((log) => { 
+                  const p = $.create('p'); 
+                  const emoji = log.recognized ? '✅' : '❌'; 
+                  const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
+                  const dept = log.dept || log.role || ''; 
+                  const userInfo = log.user_id ? ` ${log.user_id}` : '';
+                  p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
+                  return p; 
+                })); 
+              }); }
               catch (e) { /* ignore */ }
             }
           })
@@ -377,7 +498,16 @@ function handleLogoutResponse(data) {
           } else {
             try { fetch('/api/get-state').then((r) => r.json()).then(({ logout_logs }) => {
               const logs = logout_logs || [];
-              $('#recognitionLog').replaceChildren(...logs.map((log) => { const p = $.create('p'); const emoji = log.recognized ? '✅' : '❌'; const dept = log.dept || log.role || ''; p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${log.name} ${log.user_id} ${dept ? '(' + dept + ')' : ''}`; return p; })); }); }
+              $('#recognitionLog').replaceChildren(...logs.map((log) => { 
+                const p = $.create('p'); 
+                const emoji = log.recognized ? '✅' : '❌'; 
+                const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
+                const dept = log.dept || log.role || ''; 
+                const userInfo = log.user_id ? ` ${log.user_id}` : '';
+                p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
+                return p; 
+              })); 
+            }); }
             catch (e) { /* ignore */ }
           }
         })
@@ -422,17 +552,46 @@ function stopCamera() {
 
   clearInterval(landmarkInterval);
   landmarkInterval = undefined;
+
+  const overlay = document.getElementById('cameraFeedOverlay');
+  if (overlay && overlay.getContext) {
+    const ctx = overlay.getContext('2d');
+    ctx.clearRect(0, 0, overlay.width || 0, overlay.height || 0);
+  }
 }
 
-// Event listeners
-const startBtn = $('#start-camera');
-const stopBtn = $('#stop-camera');
+// Clear recognition logs when page becomes hidden or loses focus
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    $('#recognitionLog').innerHTML = '';
+  }
+});
 
-if (startBtn) startBtn.onclick = startCamera;
-if (stopBtn) stopBtn.onclick = stopCamera;
+// Event listeners
+const stopBtn = $('#stop-camera');
+if (stopBtn) {
+  stopBtn.onclick = () => {
+    stopCamera();
+    // Clear logged-in users and logged-out users when explicitly stopping
+    clearLoggedInUsers();
+    clearLoggedOutUsers();
+    showingAlreadyLoggedOutMessage = false;
+  };
+}
 
 // Auto-start on page load
 window.addEventListener('load', () => {
-  // delay for a moment to ensure page is rendered
-  setTimeout(startCamera, 300);
+  // Keep logs cleared when returning to page
+  $('#recognitionLog').innerHTML = '';
+  startCamera();
+});
+
+// Stop camera when page is about to unload
+window.addEventListener('beforeunload', () => {
+  stopCamera();
+});
+
+// Clear logs when navigating away from this page
+window.addEventListener('pagehide', () => {
+  $('#recognitionLog').innerHTML = '';
 });
