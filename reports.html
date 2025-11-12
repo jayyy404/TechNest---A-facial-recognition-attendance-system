@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Reports - FaceAttend</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <link rel="stylesheet" href="/src/css/modal.css" />
+    <link rel="stylesheet" href="/src/css/reports.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="brand">
+          <div class="logo">FR</div>
+          <div>
+            <h1>Face Attendance</h1>
+            <p>Facial Recognition System</p>
+          </div>
+        </div>
+        <div class="nav">
+          <a href="/" data-section="Dashboard">
+            <i class="fa fa-home"></i>
+            Dashboard
+          </a>
+          <a href="/users">
+            <i class="fa fa-users"></i>
+            Manage Users
+          </a>
+          <a href="/attendance">
+            <i class="fa fa-calendar-check"></i>
+            Attendance (Live)
+          </a>
+          <a href="/logout">
+            <i class="fa fa-sign-out"></i>
+            Logout (Live)
+          </a>
+          <a href="/reports" class="active">
+            <i class="fa fa-chart-bar"></i>
+            Reports
+          </a>
+          <a href="/logs">
+            <i class="fa fa-book"></i>
+            Logs
+          </a>
+          <a href="/settings" class="" data-section="Settings">
+            <i class="fa fa-cog"></i>
+            Settings
+          </a>
+        </div>
+        <div class="footer">
+          Logged in as
+          <b>Admin</b>
+        </div>
+      </div>
+
+      <!-- Main Reports Content -->
+      <div class="main" id="reportsContent" style="display: none;">
+        <h2>Reports</h2>
+
+        <div class="clock" id="liveClock"></div>
+
+        <div class="reports-menu">
+          <div class="dropdown">
+            <button id="show-report-monthly" class="dropdown-btn">📅 Monthly Attendance ▼</button>
+            <div class="dropdown-content">
+              <button id="show-report-monthly-attendance">📅 Monthly Attendance</button>
+              <button id="show-report-monthly-logout">🚪 Monthly Logout</button>
+            </div>
+          </div>
+          <button id="show-report-custom">⚙️ Custom Report</button>
+          <button id="show-report-summary">📊 Summary</button>
+          <button id="show-report-exceptions">🚨 Exceptions</button>
+          <button id="show-report-individual">👤 Individual User</button>
+        </div>
+
+        <!-- Monthly Attendance -->
+        <div id="monthly" class="report-section active">
+          <div class="report-card">
+            <h3>Monthly Attendance Report</h3>
+            <p>Overview of attendance for each month by user.</p>
+            <button id="export-csv-monthly" class="btn" style="margin-bottom: 15px;">📥 Export CSV</button>
+            <div class="data">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Dept</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly Logout -->
+        <div id="monthly-logout" class="report-section">
+          <div class="report-card">
+            <h3>Monthly Logout Report</h3>
+            <p>Overview of logout for each month by user.</p>
+            <button id="export-csv-logout" class="btn" style="margin-bottom: 15px;">📥 Export CSV</button>
+            <div class="data">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Dept</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="custom" class="report-section">
+          <div class="report-card">
+            <h3>Custom Report Generator</h3>
+            <form>
+              <label>
+                From:
+                <input type="date" name="from" value="2025-01-01" />
+              </label>
+              <label>
+                To:
+                <input type="date" name="to" value="2025-02-01" />
+              </label>
+            </form>
+            <div class="data"></div>
+          </div>
+        </div>
+
+        <!-- Summary Report -->
+        <div id="summary" class="report-section">
+          <div class="report-card">
+            <h3>Attendance Summary</h3>
+            <ul>
+              <li class="total-registered"></li>
+              <li class="total-recognized-attendance"></li>
+              <li class="total-logout"></li>
+              <li class="total-unrecognized"></li>
+            </ul>
+          </div>
+        </div>
+
+        <div id="exceptions" class="report-section">
+          <div class="report-card">
+            <h3>Exception Reports</h3>
+            <p>Unrecognized attempts and suspicious activities.</p>
+            <div class="data"></div>
+          </div>
+        </div>
+
+        <!-- Individual User Report -->
+        <div id="individual" class="report-section">
+          <div class="report-card">
+            <h3>Individual User Report</h3>
+            <form>
+              <label>
+                Enter User ID:
+                <input
+                  type="text"
+                  id="user-id-search"
+                  name="userId"
+                  placeholder="e.g. 2023001"
+                  required />
+              </label>
+            </form>
+            <div class="dropdown" style="margin-top: 15px;">
+              <button type="button" class="dropdown-btn" id="user-record-type-btn" style="display: none;">
+                Attendance Records ▼
+              </button>
+              <div class="dropdown-content">
+                <a href="#" id="user-record-attendance">Attendance Records</a>
+                <a href="#" id="user-record-logout">Logout Records</a>
+              </div>
+            </div>
+            <div class="data"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal" id="adminModal" style="display: none;">
+      <div class="modal-content">
+        <form id="admin-form">
+          <h3 id="modalTitle">🔒 Admin Confirmation</h3>
+          <p>Please enter Admin password to continue.</p>
+          <input
+            type="password"
+            name="password"
+            id="adminPass"
+            placeholder="Enter password"
+            required />
+          <div class="modal-actions">
+            <button class="btn btn-confirm" type="submit">Unlock</button>
+            <button class="btn btn-cancel" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <script type="module" src="/src/js/reports.js"></script>
+  </body>
+</html>

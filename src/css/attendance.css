@@ -1,0 +1,43 @@
+.attendance-container {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+  max-height: calc(100vh - 200px);
+}
+.camera-box {
+  flex: 2;
+  background: #111827;
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+.camera-box video {
+  width: 100%;
+  flex: 1;
+  border-radius: 12px;
+  background: black;
+  object-fit: cover;
+}
+.controls {
+  margin-top: 10px;
+}
+.log-box {
+  flex: 1;
+  background: #1f2937;
+  border-radius: 12px;
+  padding: 15px;
+  color: #fff;
+  max-height: calc(100vh - 200px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.log-list {
+  flex: 1;
+  overflow-y: auto;
+}

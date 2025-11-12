@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Attendance (Live) - FaceAttend</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <link rel="stylesheet" href="/src/css/attendance.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="brand">
+          <div class="logo">FR</div>
+          <div>
+            <h1>System Attendance</h1>
+            <p>Facial Recognition System</p>
+          </div>
+        </div>
+        <div class="nav">
+          <a href="/">
+            <i class="fa fa-home"></i>
+            Dashboard
+          </a>
+          <a href="/users">
+            <i class="fa fa-users"></i>
+            Manage Users
+          </a>
+          <a href="/attendance" class="active">
+            <i class="fa fa-calendar-check"></i>
+            Attendance (Live)
+          </a>
+          <a href="/logout">
+            <i class="fa fa-sign-out"></i>
+            Logout (Live)
+          </a>
+          <a href="/reports">
+            <i class="fa fa-chart-bar"></i>
+            Reports
+          </a>
+          <a href="/logs">
+            <i class="fa fa-book"></i>
+            Logs
+          </a>
+          <a href="/settings" class="">
+            <i class="fa fa-cog"></i>
+            Settings
+          </a>
+        </div>
+        <div class="footer">
+          Logged in as
+          <b>User</b>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="main">
+        <div class="topbar">
+          <h2>Live Attendance</h2>
+          <div class="top-actions">
+            <div class="clock" id="liveClock"></div>
+          </div>
+        </div>
+
+        <div class="attendance-container">
+          <!-- Camera Section -->
+          <div class="camera-box">
+            <video id="cameraFeed" autoplay ></video>
+            <div class="controls">
+              <button class="btn" id="start-camera">
+                <i class="fa fa-play"></i>
+                Start
+              </button>
+              <button class="btn secondary" id="stop-camera">
+                <i class="fa fa-stop"></i>
+                Stop
+              </button>
+            </div>
+          </div>
+
+          <!-- Recognition Log -->
+          <div class="log-box">
+            <h3>Recognition Log</h3>
+            <div class="log-list" id="recognitionLog"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- face-api.js for client-side landmarks (used by attendance page) -->
+    <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script type="module" src="/src/js/attendance.js"></script>
+  </body>
+</html>

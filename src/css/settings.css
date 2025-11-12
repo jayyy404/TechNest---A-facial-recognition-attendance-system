@@ -1,0 +1,36 @@
+/* ====== Settings Styles ====== */
+.settings-section {
+  background: #0d1117;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #333;
+}
+.settings-section h3 {
+  margin-top: 0;
+}
+.form-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+.form-row div {
+  flex: 1;
+}
+.form-row input,
+.form-row select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #555;
+  border-radius: 8px;
+  background: #161b22;
+  color: #fff;
+}
+
+.alert {
+  padding: 10px;
+  background: #198754;
+  color: #fff;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}

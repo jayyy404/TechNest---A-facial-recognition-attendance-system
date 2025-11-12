@@ -1,0 +1,9 @@
+{
+  "apiPathsDirectory": "src/api",
+  "buildFilesDirectory": "dist",
+  "websiteTitle": "FaceAttend",
+  "ssrPathsDirectory": "src/ssr",
+  "rewrites": {
+    
+  }
+}

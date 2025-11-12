@@ -1,0 +1,4 @@
+RewriteEngine on
+
+# Redirect all routes to index.php
+RewriteRule ^(.*)$ index.php [L,QSA]

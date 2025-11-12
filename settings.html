@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Settings - TechNest Recognition</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="src/css/style.css" />
+    <link rel="stylesheet" href="src/css/modal.css" />
+    <link rel="stylesheet" href="src/css/settings.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="sidebar">
+        <div class="brand">
+          <div class="logo">FR</div>
+          <div>
+            <h1>Face Attendance</h1>
+            <p>Facial Recognition IS</p>
+          </div>
+        </div>
+        <div class="nav">
+          <a href="/" data-section="Dashboard">
+            <i class="fa fa-home"></i>
+            Dashboard
+          </a>
+          <a href="/users">
+            <i class="fa fa-users"></i>
+            Manage Users
+          </a>
+          <a href="/attendance">
+            <i class="fa fa-calendar-check"></i>
+            Attendance (Live)
+          </a>
+          <a href="/logout">
+            <i class="fa fa-sign-out"></i>
+            Logout (Live)
+          </a>
+          <a href="/reports">
+            <i class="fa fa-chart-bar"></i>
+            Reports
+          </a>
+          <a href="/logs">
+            <i class="fa fa-book"></i>
+            Logs
+          </a>
+          <a href="/settings" class="active" data-section="Settings">
+            <i class="fa fa-cog"></i>
+            Settings
+          </a>
+        </div>
+        <div class="footer">
+          Logged in as
+          <b>Admin</b>
+        </div>
+      </div>
+
+      <!-- ====== Wrap main content to hide until unlocked ====== -->
+      <div class="main" id="settingsContent" style="display: none">
+        <div class="topbar">
+          <div id="liveClock"></div>
+        </div>
+
+        <h2>Settings</h2>
+        <div class="alert" style="display:none">
+          <i class="fa fa-check-circle"></i>
+          <span id="alert-contents"></span>
+        </div>
+
+        <form id="system-settings" class="settings-section">
+          <h3>
+            <i class="fa fa-cogs"></i>
+            System Configuration
+          </h3>
+          <div class="form-row">
+            <div>
+              <label>System Name</label>
+              <input type="text" name="system_name" />
+            </div>
+            <div>
+              <label>Institution / Organization</label>
+              <input type="text" name="institution" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Default Camera</label>
+              <select name="default_camera">
+                <option value="default">Default Camera</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn">Save</button>
+        </form>
+        <!-- Removed unused settings sections: Account, Attendance, Database & Backup, Security -->
+
+        <div class="settings-section">
+          <h3>
+            <i class="fa fa-info-circle"></i>
+            About
+          </h3>
+          <p>
+            <b>TechNest Recognition System</b>
+            v1.0
+          </p>
+          <p>Developed by Team TechNest, 2025</p>
+          <p>Capstone Project — Facial Recognition Information System</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal" id="adminModal" style="display: none">
+      <div class="modal-content">
+        <form id="admin-form">
+          <h3 id="modalTitle">🔒 Admin Confirmation</h3>
+          <p>Please enter Admin password to continue.</p>
+          <input
+            type="password"
+            name="password"
+            id="adminPass"
+            placeholder="Enter password"
+            required />
+          <div class="modal-actions">
+            <button class="btn btn-confirm" type="submit">Unlock</button>
+            <button class="btn btn-cancel" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/src/js/settings.js"></script>
+  </body>
+</html>

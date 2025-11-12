@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FaceAttend - Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <link rel="stylesheet" href="/src/css/modal.css" />
+    <link rel="stylesheet" href="/src/css/index.css" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="sidebar">
+        <div class="brand">
+          <div class="logo">FR</div>
+          <div>
+            <h1>System Attendance</h1>
+            <p>TechNest Facial Recognition</p>
+          </div>
+        </div>
+        <div class="nav">
+          <a href="/" class="active" data-section="Dashboard">
+            <i class="fa fa-home"></i>
+            Dashboard
+          </a>
+          <a href="/users">
+            <i class="fa fa-users"></i>
+            Manage Users
+          </a>
+          <a href="/attendance">
+            <i class="fa fa-calendar-check"></i>
+            Attendance (Live)
+          </a>
+          <a href="/logout">
+            <i class="fa fa-sign-out"></i>
+            Logout (Live)
+          </a>
+          <a href="/reports">
+            <i class="fa fa-chart-bar"></i>
+            Reports
+          </a>
+          <a href="/logs">
+            <i class="fa fa-book"></i>
+            Logs
+          </a>
+          <a href="/settings" class="" data-section="Settings">
+            <i class="fa fa-cog"></i>
+            Settings
+          </a>
+        </div>
+        <div class="footer">
+          Logged in as
+          <b>User</b>
+        </div>
+      </div>
+
+      <div class="main" id="dashboardContent" style="display: none">
+        <div class="topbar">
+          <h2>Dashboard</h2>
+          <div class="clock" id="liveClock"></div>
+          <div class="avatar"><i class="fa fa-user"></i></div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid">
+          <div class="card">
+            <div class="stat">
+              <div class="left">
+                <h3 id="totalUsers">0</h3>
+                <p>Total Registered Users</p>
+              </div>
+              <i class="fa fa-users"></i>
+            </div>
+          </div>
+          <div class="card">
+            <div class="stat">
+              <div class="left">
+                <h3 id="todayAttendance">0</h3>
+                <p>Today's Attendance</p>
+              </div>
+              <i class="fa fa-check"></i>
+            </div>
+          </div>
+          <div class="card">
+            <div class="stat">
+              <div class="left">
+                <h3 id="unrecogAttempts">0</h3>
+                <p>Unrecognized Attempts</p>
+              </div>
+              <i class="fa fa-sad-tear"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Rate -->
+        <h2>Attendance Rate</h2>
+        <div class="grid">
+          <div class="card">
+            <div class="stat">
+              <div class="left">
+                <h3 id="rateToday">0%</h3>
+                <p>Today</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="stat">
+              <div class="left">
+                <h3 id="rateWeek">0%</h3>
+                <p>This Week</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="stat">
+              <div class="left">
+                <h3 id="rateMonth">0%</h3>
+                <p>This Month</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart + Recent Users side by side -->
+        <div class="row-container">
+          <!-- Chart Section -->
+          <div class="chart-container">
+            <canvas id="attendanceChart"></canvas>
+            <div style="text-align: center; margin-top: 10px">
+              <button id="set-chart-type-bar" class="btn">Bar View</button>
+              <button id="set-chart-type-line" class="btn">Line View</button>
+              <button id="download-chart" class="btn">Download Chart</button>
+            </div>
+          </div>
+
+          <!-- Recent Users Section -->
+          <div class="users-container">
+            <h2>Recent Users</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>ID</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody id="userTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal" id="adminModal" style="display: none;">
+      <div class="modal-content">
+        <form id="admin-form">
+          <h3 id="modalTitle">🔒 Admin Confirmation</h3>
+          <p>Please enter Admin password to continue.</p>
+          <input
+            type="password"
+            name="password"
+            id="adminPass"
+            placeholder="Enter password"
+            required />
+          <div class="modal-actions">
+            <button class="btn btn-confirm" type="submit">Unlock</button>
+            <button class="btn btn-cancel" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/src/js/index.js"></script>
+  </body>
+</html>

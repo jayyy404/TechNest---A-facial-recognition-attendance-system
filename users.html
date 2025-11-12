@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FaceAttend - Manage Users</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="/src/css/style.css" />
+    <link rel="stylesheet" href="/src/css/modal.css" />
+    <link rel="stylesheet" href="/src/css/index.css" />
+    <link rel="stylesheet" href="/src/css/users.css" />
+  </head>
+  <body>
+    <div class="app">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="brand">
+          <div class="logo">FR</div>
+          <div>
+            <h1>System Attendance</h1>
+            <p>Facial Recognition System</p>
+          </div>
+        </div>
+        <div class="nav">
+          <a href="/" data-section="Dashboard">
+            <i class="fa fa-home"></i>
+            Dashboard
+          </a>
+          <a href="/users" class="active">
+            <i class="fa fa-users"></i>
+            Manage Users
+          </a>
+          <a href="/attendance">
+            <i class="fa fa-calendar-check"></i>
+            Attendance (Live)
+          </a>
+          <a href="/logout">
+            <i class="fa fa-sign-out"></i>
+            Logout (Live)
+          </a>
+          <a href="/reports">
+            <i class="fa fa-chart-bar"></i>
+            Reports
+          </a>
+          <a href="/logs">
+            <i class="fa fa-book"></i>
+            Logs
+          </a>
+          <a href="/settings" class="" data-section="Settings">
+            <i class="fa fa-cog"></i>
+            Settings
+          </a>
+        </div>
+        <div class="footer">
+          Logged in as
+          <b>Admin</b>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="main">
+        <div class="topbar">
+          <h2>Manage Users</h2>
+          <div class="clock" id="liveClock"></div>
+          <!-- ✅ Clock -->
+          <div class="top-actions">
+            <button class="btn" id="open-user-modal">+ Add User</button>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="Search by name, ID, or role..." />
+        </div>
+
+        <!-- Users Table -->
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>ID</th>
+              <th>Role</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="userTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="userModal" style="display: none">
+      <div class="modal-content">
+        <h2 id="modalTitle">Add New User</h2>
+
+        <form id="user-form">
+          <div class="form-row">
+            <div>
+              <label>Full Name</label>
+              <input name="name" id="uname" />
+            </div>
+            <div>
+              <label>Student/Employee ID</label>
+              <input name="id" id="uid" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label>Course/Dept</label>
+              <input name="dept" id="udept" />
+            </div>
+            <div>
+              <label>Username</label>
+              <input name="username" id="uusername" />
+            </div>
+          </div>
+
+          <!-- Hidden role field set to Student -->
+          <input type="hidden" name="role" id="urole" value="Student" />
+
+          <!-- Camera & Preview -->
+          <div class="form-row">
+            <div class="camera-box" style="flex: 2">
+              <label>Camera</label>
+              <video id="camera" autoplay></video>
+              <div class="btn-group">
+                <button type="button" class="btn" id="capture-photo">Capture</button>
+                <button type="button" class="btn secondary" id="clear-photos">Clear</button>
+              </div>
+            </div>
+            <div class="preview-box" style="flex: 1">
+              <label>Preview</label>
+              <div id="preview">No photo</div>
+            </div>
+          </div>
+
+          <div class="btn-group">
+            <button class="btn">Save User</button>
+            <button class="btn secondary" id="close-modal" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div class="modal" id="adminModal">
+      <div class="modal-content">
+        <form id="admin-form">
+          <h3 id="modalTitle">🔒 Admin Confirmation</h3>
+          <p>Please enter Admin password to continue.</p>
+          <input
+            type="password"
+            name="password"
+            id="adminPass"
+            placeholder="Enter password"
+            required />
+          <div class="modal-actions">
+            <button class="btn btn-confirm" type="submit">Unlock</button>
+            <button class="btn btn-cancel" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  <!-- face-api.js for client-side face detection and 68-point landmarks -->
+  <script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script type="module" src="/src/js/users.js"></script>
+  </body>
+</html>
