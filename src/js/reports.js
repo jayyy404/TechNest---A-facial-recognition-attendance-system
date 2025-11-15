@@ -109,12 +109,47 @@ async function fetchMonthlyLogout() {
     return;
   }
 
-  renderData(
-    monthlyReport,
-    ['user_id', 'name', 'role', 'dept', 'month', 'status'],
-    ['User ID', 'Name', 'Role', 'Dept', 'Month', 'Status'],
-    $('#monthly-logout .data')
-  );  
+  const table = $.create('table');
+  const thead = $.create('thead');
+  const tbody = $.create('tbody');
+
+  table.append(thead, tbody);
+
+  thead.innerHTML = `
+    <tr>
+      <th>User ID</th>
+      <th>Name</th>
+      <th>Role</th>
+      <th>Dept</th>
+      <th>Month</th>
+      <th>Status</th>
+    </tr>
+  `;
+
+  tbody.replaceChildren(
+    ...monthlyReport.map(row => {
+      const el = $.create('tr');
+      
+      // If not recognized, show blank for user details
+      const user_id = row.recognized ? row.user_id : '';
+      const name = row.recognized ? row.name : '';
+      const role = row.recognized ? row.role : '';
+      const dept = row.recognized ? row.dept : '';
+      
+      el.innerHTML = `
+        <td>${user_id}</td>
+        <td>${name}</td>
+        <td>${role}</td>
+        <td>${dept}</td>
+        <td>${row.month}</td>
+        <td>${row.status}</td>
+      `;
+
+      return el;
+    })
+  );
+
+  $('#monthly-logout .data').replaceChildren(table);
 }
 
 async function customReportGeneration() {

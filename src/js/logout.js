@@ -1,25 +1,7 @@
 import { $ } from './libs/element';
 import updateClock from './libs/clock';
+import { formatTo12Hour } from './libs/utilities';
 
-// Don't load logs on initial page load - they'll be cleared anyway
-// fetch('/api/get-state')
-//   .then((res) => res.json())
-//   .then(({ logout_logs }) => {
-//     const logs = logout_logs || [];
-//     $('#recognitionLog').replaceChildren(
-//       ...logs.map((log) => {
-//         const p = $.create('p');
-//         const emoji = log.recognized ? '✅' : '❌';
-//         // Handle null/empty names gracefully
-//         const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
-//         const dept = log.dept || log.role || '';
-//         const userInfo = log.user_id ? ` ${log.user_id}` : '';
-//         p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`;
-
-//         return p;
-//       })
-//     );
-//   });
 
 updateClock();
 
@@ -119,21 +101,21 @@ function clearLoggedOutUsers() {
 /** @type {HTMLVideoElement} */
 const video = $('#cameraFeed');
 
-// Camera lighting configuration (applied via CSS filters since browser doesn't have direct camera control)
-// Values matched to: brightness 77, contrast 83, saturation 93 from OpenCV configuration
+// Camera lighting configuration 
+// Values matched to: brightness 77, contrast 83, saturation 93 from (trajan na code)
 function configureVideoLighting(videoElement) {
   if (!videoElement) return;
   
   // Apply CSS filter adjustments for brightness, contrast, and saturation
-  // Converted from OpenCV values (0-100 scale) to CSS filter percentages
+  // CSS filter percentages
   videoElement.style.filter = 'brightness(1.1) contrast(1.15) saturate(1.1)';
   console.debug('[Camera] Lighting configuration applied: brightness(1.1) contrast(1.15) saturate(1.1)');
 }
 
 // tuning constants 
-const LANDMARK_POINT_SCALE = 0.015; // fraction of face width used for point radius (much smaller, almost invisible but still visible)
-const LANDMARK_POINT_MAX = 4; // max radius in pixels (very small)
-const BOX_PADDING_SCALE = 0.15; // fraction of face width for bounding box padding (bigger red box)
+const LANDMARK_POINT_SCALE = 0.010; // fraction of face width used for point radius .015
+const LANDMARK_POINT_MAX = 4; // max radius in pixels 
+const BOX_PADDING_SCALE = 0.15; // fraction of face width for bounding box padding 
 const JAW_EXTEND_RATIO = 1.15; // extend jaw points outward by 15% to fit sides better
 // distance/ratio tuning (face box width as fraction of display width)
 // Preferred/ideal face width ratio ~ 35% of display (du raya ru sakto na distance sa cam)
@@ -406,7 +388,7 @@ function capture() {
 
 // common handler for logout recognition responses 
 function handleLogoutResponse(data) {
-  const time = new Date().toLocaleTimeString();
+  const time = formatTo12Hour(new Date());
   const list = $('#recognitionLog');
 
   if (data && data.status === 'success') {
@@ -461,7 +443,7 @@ function handleLogoutResponse(data) {
                   const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
                   const dept = log.dept || log.role || ''; 
                   const userInfo = log.user_id ? ` ${log.user_id}` : '';
-                  p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
+                  p.innerHTML = `<strong>${formatTo12Hour(log.time)}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
                   return p; 
                 })); 
               }); }
@@ -584,6 +566,12 @@ window.addEventListener('load', () => {
   // Keep logs cleared when returning to page
   $('#recognitionLog').innerHTML = '';
   startCamera();
+  // Automatically enter fullscreen layout for live logout
+  try {
+    enterFullscreenMode();
+  } catch (e) {
+    console.warn('Failed to enter fullscreen mode automatically', e);
+  }
 });
 
 // Stop camera when page is about to unload
@@ -595,3 +583,45 @@ window.addEventListener('beforeunload', () => {
 window.addEventListener('pagehide', () => {
   $('#recognitionLog').innerHTML = '';
 });
+
+// Fullscreen functionality
+const logoutNavLink = $('#logout-nav-link');
+if (logoutNavLink) {
+  logoutNavLink.onclick = (e) => {
+    e.preventDefault();
+    document.body.classList.add('fullscreen-mode');
+    
+    // Listen for ESC key to exit fullscreen
+    const exitFullscreen = (e) => {
+      if (e.key === 'Escape') {
+        document.body.classList.remove('fullscreen-mode');
+        document.removeEventListener('keydown', exitFullscreen);
+        // Navigate to dashboard
+        window.location.href = '/';
+      }
+    };
+    document.addEventListener('keydown', exitFullscreen);
+  };
+}
+
+// Utility: enter fullscreen mode and set ESC to exit -> dashboard
+function enterFullscreenMode() {
+  document.body.classList.add('fullscreen-mode');
+
+  if (window._exitFullscreenHandler) {
+    document.removeEventListener('keydown', window._exitFullscreenHandler);
+    window._exitFullscreenHandler = null;
+  }
+
+  window._exitFullscreenHandler = function (ev) {
+    if (ev.key === 'Escape') {
+      document.body.classList.remove('fullscreen-mode');
+      document.removeEventListener('keydown', window._exitFullscreenHandler);
+      window._exitFullscreenHandler = null;
+      window.location.href = '/';
+    }
+  };
+
+  document.addEventListener('keydown', window._exitFullscreenHandler);
+}
+

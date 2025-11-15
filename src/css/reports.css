@@ -82,9 +82,10 @@
   background: linear-gradient(to bottom left, #1d4ed8, #1e3a8a, #082f49);
   border-radius: 10px;
   padding: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
   color: #fff;
+  max-height: 450px;
 }
 table {
   width: 100%;
@@ -123,3 +124,42 @@ select {
   z-index: 1000;
   text-align: center;
 }
+
+/* Scrollable tables in monthly reports - display 4 rows initially */
+#monthly .data table,
+#monthly-logout .data table {
+  display: flex;
+  flex-direction: column;
+  max-height: 225px;
+}
+
+#monthly .data thead,
+#monthly-logout .data thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+#monthly .data tbody,
+#monthly-logout .data tbody {
+  display: block;
+  overflow-y: scroll;
+  max-height: 240px;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#monthly .data tbody::-webkit-scrollbar,
+#monthly-logout .data tbody::-webkit-scrollbar {
+  display: none;
+}
+
+#monthly .data tbody tr,
+#monthly-logout .data tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+

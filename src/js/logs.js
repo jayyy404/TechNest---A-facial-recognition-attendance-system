@@ -1,6 +1,7 @@
 import { checkIfAdminLoggedIn, confirmIfAdmin } from './admin';
 import updateClock from './libs/clock';
 import { $ } from './libs/element';
+import { formatTo12Hour } from './libs/utilities';
 
 let allLogs = [];
 let allLogoutLogs = [];
@@ -37,7 +38,7 @@ function renderLogs(logType) {
       const tr = $.create('tr');
 
       tr.innerHTML = `
-        <td>${log.time}</td>
+        <td>${formatTo12Hour(log.time)}</td>
         <td>${log.name ?? ''}</td>
         <td>${log.user_id ?? ''}</td>
         <td>${statusText}</td>

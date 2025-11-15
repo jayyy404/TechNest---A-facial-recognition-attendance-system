@@ -205,9 +205,10 @@ function updateDashboard() {
 
   /** Recent attendance logs */
   const table = $('#userTable');
+  table.innerHTML = '';
 
   /** Map users to the table */
-  data.users.slice(0, 5).forEach((user) => {
+  data.users.forEach((user) => {
     const tr = document.createElement('tr');
 
     // Instead of using a long string here, just use map() and join() so that it's cleaner

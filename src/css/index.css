@@ -71,6 +71,42 @@ table tr:hover {
   border-radius: 12px;
   color: white;
   margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 250px;
+}
+
+/* Make table scrollable within container */
+.users-container table {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.users-container thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+.users-container tbody {
+  display: block;
+  overflow-y: scroll;
+  max-height: 100px;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.users-container tbody::-webkit-scrollbar {
+  display: none;
+}
+
+.users-container tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
 }
 
 /* Live clock */
@@ -87,3 +123,37 @@ table tr:hover {
   z-index: 1000;
   text-align: center;
 }
+
+/* Scrollable logs table - display 11 rows initially */
+#logsContent table {
+  display: flex;
+  flex-direction: column;
+  max-height: 600px;
+}
+
+#logsContent thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+#logsContent tbody {
+  display: block;
+  overflow-y: scroll;
+  max-height: 450px;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-stylne: none;
+}
+
+#logsContent tbody::-webkit-scrollbar {
+  display: none;
+}
+
+#logsContent tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+

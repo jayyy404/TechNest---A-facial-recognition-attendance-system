@@ -206,6 +206,14 @@ tbody td{
   color:white;
   cursor:pointer
 }
+.btn--compact{
+  padding:8px 14px;
+  font-size:13px;
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 .btn.secondary{
   background:transparent;
   border:1px solid rgba(255,255,255,0.06);

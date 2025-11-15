@@ -1,24 +1,7 @@
 import { $ } from './libs/element';
 import updateClock from './libs/clock';
+import { formatTo12Hour } from './libs/utilities';
 
-// Don't load logs on initial page load - they'll be cleared anyway
-// fetch('/api/get-state')
-//   .then((res) => res.json())
-//   .then(({ logs }) => {
-//     $('#recognitionLog').replaceChildren(
-//       ...logs.map((log) => {
-//         const p = $.create('p');
-//         const emoji = log.recognized ? '✅' : '❌';
-//         // Handle null/empty names gracefully
-//         const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
-//         const dept = log.dept || log.role || '';
-//         const userInfo = log.user_id ? ` ${log.user_id}` : '';
-//         p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`;
-
-//         return p;
-//       })
-//     );
-//   });
 
 updateClock();
 
@@ -101,7 +84,7 @@ function configureVideoLighting(videoElement) {
 }
 
 // tuning constants 
-const LANDMARK_POINT_SCALE = 0.015; // fraction of face width used for point radius
+const LANDMARK_POINT_SCALE = 0.010; // fraction of face width used for point radius
 const LANDMARK_POINT_MAX = 4; // max radius in pixels 
 const BOX_PADDING_SCALE = 0.15; // fraction of face width for bounding box padding 
 const JAW_EXTEND_RATIO = 1.15; // extend jaw points outward by 15% to fit sides better
@@ -375,7 +358,7 @@ function capture() {
 
 // common handler for recognition responses 
 function handleRecognitionResponse(data) {
-  const time = new Date().toLocaleTimeString();
+  const time = formatTo12Hour(new Date());
   const list = $('#recognitionLog');
 
   if (data && data.status === 'success') {
@@ -431,7 +414,7 @@ function handleRecognitionResponse(data) {
                   const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
                   const dept = log.dept || log.role || ''; 
                   const userInfo = log.user_id ? ` ${log.user_id}` : '';
-                  p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
+                  p.innerHTML = `<strong>${formatTo12Hour(log.time)}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
                   return p; 
                 })); 
               }); }
@@ -576,6 +559,12 @@ window.addEventListener('load', () => {
   // Keep logs cleared when returning to page
   $('#recognitionLog').innerHTML = '';
   startCamera();
+  // Automatically enter fullscreen layout for live attendance
+  try {
+    enterFullscreenMode();
+  } catch (e) {
+    console.warn('Failed to enter fullscreen mode automatically', e);
+  }
 });
 
 // Stop camera when page is about to unload
@@ -594,3 +583,47 @@ $('#stop-camera').onclick = () => {
   clearLoggedInUsers();
   showingAlreadyLoggedInMessage = false;
 };
+
+// Fullscreen functionality
+const attendanceNavLink = $('#attendance-nav-link');
+if (attendanceNavLink) {
+  attendanceNavLink.onclick = (e) => {
+    e.preventDefault();
+    document.body.classList.add('fullscreen-mode');
+    
+    // Listen for ESC key to exit fullscreen
+    const exitFullscreen = (e) => {
+      if (e.key === 'Escape') {
+        document.body.classList.remove('fullscreen-mode');
+        document.removeEventListener('keydown', exitFullscreen);
+        // Navigate to dashboard
+        window.location.href = '/';
+      }
+    };
+    document.addEventListener('keydown', exitFullscreen);
+  };
+}
+
+// Utility: enter fullscreen mode and set ESC to exit -> dashboard
+function enterFullscreenMode() {
+  document.body.classList.add('fullscreen-mode');
+
+  // Ensure we don't attach multiple handlers
+  if (window._exitFullscreenHandler) {
+    document.removeEventListener('keydown', window._exitFullscreenHandler);
+    window._exitFullscreenHandler = null;
+  }
+
+  window._exitFullscreenHandler = function (ev) {
+    if (ev.key === 'Escape') {
+      document.body.classList.remove('fullscreen-mode');
+      document.removeEventListener('keydown', window._exitFullscreenHandler);
+      window._exitFullscreenHandler = null;
+      // go back to dashboard
+      window.location.href = '/';
+    }
+  };
+
+  document.addEventListener('keydown', window._exitFullscreenHandler);
+}
+

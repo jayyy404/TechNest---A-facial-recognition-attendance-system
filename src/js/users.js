@@ -6,6 +6,7 @@ import { $ } from './libs/element';
 let users = [];
 let capturedPhotos = [];
 let currentPreviewIndex = 0; // for carousel preview
+const TARGET_SAMPLE_COUNT = 7;
 
 const FACEAPI_MODEL_URI = '/models'; // change to local models folder or keep default fallback
 let faceApiModelsLoaded = false;
@@ -18,6 +19,15 @@ function configureVideoLighting(videoElement) {
   if (!videoElement) return;
   videoElement.style.filter = 'brightness(1.1) contrast(1.15) saturate(1.1)';
   console.debug('[Camera] Lighting configuration applied: brightness(1.1) contrast(1.15) saturate(1.1)');
+}
+
+function animateCameraCapture() {
+  const video = $('#camera');
+  if (!video) return;
+  video.classList.remove('capture-flash');
+  // force reflow so animation retriggers
+  void video.offsetWidth;
+  video.classList.add('capture-flash');
 }
 
 function loadUsers() {
@@ -64,8 +74,7 @@ function filterUsers() {
   return users.filter(
     (u) =>
       u.name.toLowerCase().includes(searchValue) ||
-      (u.id || '').toLowerCase().includes(searchValue) ||
-      (u.role || '').toLowerCase().includes(searchValue)
+      (u.id || '').toLowerCase().includes(searchValue)
   );
 }
 
@@ -175,60 +184,74 @@ function clearForm() {
 
 function updatePreview() {
   const preview = $('#preview');
-  if (capturedPhotos.length === 0) {
-    preview.innerHTML = 'No photo';
-    currentPreviewIndex = 0;
-  } else {
-    // Show current image and progress
+  const hasPhotos = capturedPhotos.length > 0;
+  preview.classList.toggle('empty', !hasPhotos);
+
+  let currentDisplayIndex = 0;
+  let totalDisplayCount = TARGET_SAMPLE_COUNT;
+
+  const content = [];
+
+  if (hasPhotos) {
+    currentDisplayIndex = currentPreviewIndex + 1;
+    totalDisplayCount = Math.max(capturedPhotos.length, TARGET_SAMPLE_COUNT);
+
     const img = $.create('img');
     img.src = capturedPhotos[currentPreviewIndex];
     img.style.maxWidth = '100%';
-    img.style.maxHeight = '400px';
+    img.style.maxHeight = '420px';
     img.style.objectFit = 'contain';
-    img.style.marginBottom = '12px';
-
-    const progress = $.create('div');
-    progress.style.marginBottom = '12px';
-    progress.style.textAlign = 'center';
-    progress.style.fontSize = '16px';
-    progress.style.fontWeight = 'bold';
-    progress.innerText = `${currentPreviewIndex + 1}/${capturedPhotos.length}`;
-
-    const navContainer = $.create('div');
-    navContainer.style.display = 'flex';
-    navContainer.style.gap = '8px';
-    navContainer.style.justifyContent = 'center';
-    navContainer.style.marginTop = '8px';
-
-    const prevBtn = $.create('button');
-    prevBtn.type = 'button';
-    prevBtn.className = 'btn';
-    prevBtn.innerText = '◀ Prev';
-    prevBtn.disabled = currentPreviewIndex === 0;
-    prevBtn.style.flex = '1';
-    prevBtn.onclick = () => {
-      if (currentPreviewIndex > 0) {
-        currentPreviewIndex--;
-        updatePreview();
-      }
-    };
-
-    const nextBtn = $.create('button');
-    nextBtn.type = 'button';
-    nextBtn.className = 'btn';
-    nextBtn.innerText = 'Next ▶';
-    nextBtn.disabled = currentPreviewIndex === capturedPhotos.length - 1;
-    nextBtn.style.flex = '1';
-    nextBtn.onclick = () => {
-      if (currentPreviewIndex < capturedPhotos.length - 1) {
-        currentPreviewIndex++;
-        updatePreview();
-      }
-    };
-
-    navContainer.append(prevBtn, nextBtn);
-    preview.replaceChildren(img, progress, navContainer);
+    content.push(img);
+  } else {
+    currentPreviewIndex = 0;
+    totalDisplayCount = TARGET_SAMPLE_COUNT;
+    const empty = $.create('div');
+    empty.className = 'preview-empty-text';
+    empty.innerText = 'No photo captured yet';
+    content.push(empty);
   }
+
+  const label = $.create('div');
+  label.className = 'preview-info-label';
+  label.innerText = 'Number of Samples Captured';
+  content.push(label);
+
+  const progress = $.create('div');
+  progress.className = 'preview-progress';
+  progress.innerText = `${currentDisplayIndex}/${totalDisplayCount}`;
+  content.push(progress);
+
+  const navContainer = $.create('div');
+  navContainer.className = 'preview-nav';
+
+  const prevBtn = $.create('button');
+  prevBtn.type = 'button';
+  prevBtn.className = 'btn btn--compact';
+  prevBtn.innerText = '◀ Prev';
+  prevBtn.disabled = !hasPhotos || currentPreviewIndex === 0;
+  prevBtn.onclick = () => {
+    if (currentPreviewIndex > 0) {
+      currentPreviewIndex--;
+      updatePreview();
+    }
+  };
+
+  const nextBtn = $.create('button');
+  nextBtn.type = 'button';
+  nextBtn.className = 'btn btn--compact';
+  nextBtn.innerText = 'Next ▶';
+  nextBtn.disabled = !hasPhotos || currentPreviewIndex === capturedPhotos.length - 1;
+  nextBtn.onclick = () => {
+    if (currentPreviewIndex < capturedPhotos.length - 1) {
+      currentPreviewIndex++;
+      updatePreview();
+    }
+  };
+
+  navContainer.append(prevBtn, nextBtn);
+  content.push(navContainer);
+
+  preview.replaceChildren(...content);
 }
 
 let cameraStream;
@@ -299,6 +322,7 @@ function capture() {
   const photo = canvas.toDataURL('image/png');
   capturedPhotos.push(photo);
   updatePreview();
+  animateCameraCapture();
 }
 
 function stopAutoCapture() {
@@ -332,6 +356,7 @@ async function startAutoCapture() {
         const dataUrl = canvas.toDataURL('image/png');
         capturedPhotos.push(dataUrl);
         updatePreview();
+        animateCameraCapture();
 
         try {
           const overlay = document.getElementById('cameraOverlay');

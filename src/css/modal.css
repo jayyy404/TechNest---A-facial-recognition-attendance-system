@@ -14,7 +14,8 @@
   background: linear-gradient(to bottom left, #172554, #0c4a6e, #1e40af);
   border-radius: 12px;
   padding: 20px;
-  width: 600px;
+  width: 780px;
+  max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.95);
@@ -23,7 +24,7 @@
   color: white;
 }
 
-/* I added this code to make your lives easier */
+
 .modal-content form {
   display: flex;
   flex-direction: column;
