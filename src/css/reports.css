@@ -163,3 +163,102 @@ select {
   table-layout: fixed;
 }
 
+/* Scrollable tables in custom report - display 4 rows initially */
+#custom .data table {
+  display: flex;
+  flex-direction: column;
+  max-height: 225px;
+}
+
+#custom .data thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+#custom .data tbody {
+  display: block;
+  overflow-y: scroll;
+  max-height: 240px;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#custom .data tbody::-webkit-scrollbar {
+  display: none;
+}
+
+#custom .data tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Scrollable tables in exceptions report - display 5 rows initially */
+#exceptions .data table {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+}
+
+#exceptions .data thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+#exceptions .data tbody {
+  display: block;
+  overflow-y: scroll;
+  max-height: 260px;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#exceptions .data tbody::-webkit-scrollbar {
+  display: none;
+}
+
+#exceptions .data tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Scrollable tables in individual user report - display 3 rows initially */
+#individual .data table {
+  display: flex;
+  flex-direction: column;
+  max-height: 170px;
+}
+
+#individual .data thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  flex-shrink: 0;
+}
+
+#individual .data tbody {
+  display: block;
+  overflow-y: scroll;
+  max-height: 150px;
+  width: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#individual .data tbody::-webkit-scrollbar {
+  display: none;
+}
+
+#individual .data tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
