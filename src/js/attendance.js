@@ -139,23 +139,73 @@ async function startCamera() {
       setTimeout(resizeOverlay, 300);
 
         // start client-side landmark stream (face-api.js)
-        const FACEAPI_MODEL_URI = '/models';
+        // Robust model loader: try several candidate local paths (to handle dev servers
+        // that serve from `public/` vs project root) and fallback to remote CDN.
         let faceApiModelsLoaded = false;
+
+        async function probeModelPath(candidate) {
+          // probe for the tiny face detector manifest which should be present
+          const manifest = candidate.replace(/\/$/, '') + '/tiny_face_detector_model-weights_manifest.json';
+          try {
+            // prefer HEAD but fall back to GET if HEAD blocked
+            let res = await fetch(manifest, { method: 'HEAD' });
+            if (!res.ok) {
+              res = await fetch(manifest, { method: 'GET' });
+            }
+            if (res.ok) {
+              const ct = res.headers.get('content-type') || '';
+              // basic sanity check: manifest should be JSON
+              if (ct.includes('application/json') || ct.includes('text/json') || res.status === 200) return candidate.replace(/\/$/, '');
+            }
+          } catch (e) {
+            // ignore probe errors and return null so next candidate is tried
+          }
+          return null;
+        }
+
+        async function detectFaceApiModelPath() {
+          // Order of candidates tries to cover common setups:
+          // - code expects `/models` (dev server or built app that maps `public/` to root)
+          // - some setups serve files out of `/public/models`
+          // - relative paths for file:// or differing base paths
+          const candidates = ['/models', '/public/models', 'models', 'public/models', './models', './public/models'];
+          for (const c of candidates) {
+            const ok = await probeModelPath(c);
+            if (ok) return ok;
+          }
+          return null;
+        }
 
         async function loadFaceApiModels() {
           if (faceApiModelsLoaded) return;
+          // detect a working local path first
           try {
-            await faceapi.nets.tinyFaceDetector.loadFromUri(FACEAPI_MODEL_URI);
-            await faceapi.nets.faceLandmark68Net.loadFromUri(FACEAPI_MODEL_URI);
-            faceApiModelsLoaded = true;
-            console.debug('face-api models loaded from', FACEAPI_MODEL_URI);
-          } catch (err) {
+            const detected = await detectFaceApiModelPath();
+            if (detected) {
+              try {
+                await faceapi.nets.tinyFaceDetector.loadFromUri(detected);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(detected);
+                faceApiModelsLoaded = true;
+                console.debug('face-api models loaded from', detected);
+                return;
+              } catch (err) {
+                console.warn('Found model path but failed to load models from it, will try other fallbacks', detected, err);
+              }
+            }
+          } catch (e) {
+            console.warn('Error while detecting local model path', e);
+          }
+
+          // fallback to remote CDN if no local path works
+          try {
             const remote = 'https://justadudewhohacks.github.io/face-api.js/models';
-            console.warn('Loading face-api models from remote CDN', err);
+            console.warn('Loading face-api models from remote CDN as fallback');
             await faceapi.nets.tinyFaceDetector.loadFromUri(remote);
             await faceapi.nets.faceLandmark68Net.loadFromUri(remote);
             faceApiModelsLoaded = true;
             console.debug('face-api models loaded from remote CDN');
+          } catch (err) {
+            console.error('Failed to load face-api models from any location', err);
           }
         }
 

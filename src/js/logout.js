@@ -2,6 +2,25 @@ import { $ } from './libs/element';
 import updateClock from './libs/clock';
 import { formatTo12Hour } from './libs/utilities';
 
+// Don't load logs on initial page load - they'll be cleared anyway
+// fetch('/api/get-state')
+//   .then((res) => res.json())
+//   .then(({ logout_logs }) => {
+//     const logs = logout_logs || [];
+//     $('#recognitionLog').replaceChildren(
+//       ...logs.map((log) => {
+//         const p = $.create('p');
+//         const emoji = log.recognized ? '✅' : '❌';
+//         // Handle null/empty names gracefully
+//         const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
+//         const dept = log.dept || log.role || '';
+//         const userInfo = log.user_id ? ` ${log.user_id}` : '';
+//         p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`;
+
+//         return p;
+//       })
+//     );
+//   });
 
 updateClock();
 
@@ -486,7 +505,7 @@ function handleLogoutResponse(data) {
                 const name = log.name && log.name.trim() ? log.name : 'Unrecognized Face';
                 const dept = log.dept || log.role || ''; 
                 const userInfo = log.user_id ? ` ${log.user_id}` : '';
-                p.innerHTML = `<strong>${log.time}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
+                p.innerHTML = `<strong>${formatTo12Hour(log.time)}</strong> - ${emoji} ${name}${userInfo} ${dept ? '(' + dept + ')' : ''}`; 
                 return p; 
               })); 
             }); }

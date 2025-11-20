@@ -4,6 +4,9 @@ import { globSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 export default defineConfig({
+  root: '.',
+  publicDir: 'public',
+  
   build: {
     rollupOptions: {
       input: Object.fromEntries(
@@ -19,5 +22,10 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost',
     },
+    middlewareMode: false,
+  },
+
+  optimizeDeps: {
+    exclude: ['models'],
   },
 });
