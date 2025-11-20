@@ -257,7 +257,7 @@ function updatePreview() {
 let cameraStream;
 let autoCaptureInterval = null;
 let autoCaptureRunning = false;
-let liveLandmarkInterval = null;
+let liveLandmarkTimeout = null;
 
 async function startCamera() {
   if (cameraStream) return;
@@ -458,8 +458,9 @@ async function startAutoCapture() {
 
 // client-side landmark stream
 function startClientLandmarkStream() {
-  if (liveLandmarkInterval) return;
-  liveLandmarkInterval = setInterval(async () => {
+  if (liveLandmarkTimeout) return;
+
+  async function stream() {
     if (!cameraStream) return;
     const video = $('#camera');
     if (!video || video.videoWidth === 0) return;
@@ -532,13 +533,17 @@ function startClientLandmarkStream() {
       }
     } catch (err) {
       // ignore draw errors
+    } finally {
+      liveLandmarkTimeout = setTimeout(stream, 250);
     }
-  }, 250);
+  }
+
+  stream();
 }
 
 function stopClientLandmarkStream() {
-  if (liveLandmarkInterval) clearInterval(liveLandmarkInterval);
-  liveLandmarkInterval = null;
+  if (liveLandmarkTimeout) clearInterval(liveLandmarkTimeout);
+  liveLandmarkTimeout = null;
 }
 
 // load face-api models from local or CDN
@@ -574,6 +579,8 @@ checkIfAdminLoggedIn($('#adminModal'), () => {
 
   $('#capture-photo').onclick = startAutoCapture;
   $('#clear-photos').onclick = clearPhotos;
+
+  $('#user-form [type=submit]').disabled = false;
 
   $('#user-form').onsubmit = saveUserData;
   $('#close-modal').onclick = closeUserModal;
